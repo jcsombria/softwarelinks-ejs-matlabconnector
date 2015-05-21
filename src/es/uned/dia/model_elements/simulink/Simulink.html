@@ -1,0 +1,99 @@
+<html>
+  <head>
+  <title>External application model element - Simulink</title>
+      <link rel="stylesheet" type="text/css" href="style.css"></link>
+  </head>
+  <body">
+    <h2>
+      <img src="./simulink.png"> Simulink 
+    </h2>
+    <p>
+      The external application elements can be used to manipulate an engineering software from the EJS application. 
+    </p>
+    <p>
+      The model element uses a communication protocol that mainly allows to:
+    <ul>
+      <li>Set the value of a variable located at the engineering software</li>
+      <li>Get the value of a variable located at the engineering software</li>
+      <li>Execute code directly in the engineering software</li>
+    </ul>            
+    </p>
+
+    <p>
+      Note: Check that the environment variable $Path of your system includes the path to Matlab core(e.g. C:\MATLAB7\bin\win32) 
+    </p>
+
+
+    <h3>Levels of the communication protocol</h3>
+      Users can manipulate the engineering software using two levels of the comunication protocol:
+    <ul>
+      <li>Low-level protocol</li>
+      <li>High-level protocol</li>
+    </ul>            
+    Usually, the high level protocol is all that most users will need to fulfill their interaction
+    requirements, it being therefore the recommended entry level for users who
+    are not expert programmers or do not need a very detailed control of the communication.
+    The low level protocol is the preferred choice for users that need full control of the communication
+    mechanism. Needless to say, a correct use of the low level protocol to design
+    an interactive simulation requires some more programming effort than that of the high
+    level protocol. But it should also be noted that it can also result in a more efficient final
+    application (in terms of communication traffic and execution times).    
+
+    <h3>Remote communication</h3>
+       This external application model element allows remote communication with Matlab.       
+       Note that the using of the remote communication requires the JIM Server application in the server side. 
+       JIM Server can be downloaded from: <a href="http://lab.dia.uned.es/rmatlab">http://lab.dia.uned.es/rmatlab</a> 
+      <br>       
+      Both high-level and low-level protocols are fully supported in remote communication.
+      This means that users can create applications using local communication and then configurate the element to set a remote operation.
+      However, due to the existence of network delays, the high-level protocol has been modified to support the called <b>Asynchronous</b> link, which is an improved version of the standard one called <b>Synchronous</b> link.
+
+    <h3>Usage</h3>
+       The dialog of this model element is divided in the following three sections:
+      <p><b>Location of Matlab Engine</b></p>
+       Select <b>Local</b> or <b>Remote</b> from the listbox to set a local or remote communication respectively.
+       In the case of remote communication, use the textfields <b>Server Address</b> and <b>Port</b> to specify the location of the JIM Server.
+       Checks the <b>Asynchronous</b> checkbox if an asynchronous link in the remote communication is needed.
+
+      <p><b>Table of Linked Variables</b></p>
+       The use of this sections enables the high-level protocol. 
+       The table allows to link Matlab variables with EJS variables, in such a way that any change in a variable is updated in the other one after a call to the <b>step</b> method.
+       The variables can be written directly in the corresponding column of the table.
+       A right-click on a row lunch a pop-up menu that allows to </b>connect</b> or select an EJS variable to be linked. The pop-up menu can be also used to <b>insert</b> or <b>delete</b> a row. 
+
+      <p><b>Advanced Options</b></p>
+      The two checkboxs of this section are used to:         
+        <ul>
+          <li>Start automatically the connection with the engineering software, otherwise the connection is started by using the <b>connect</b> method</li>
+          <li>Wait forever the existence of a variable when its value is required from EJS, otherwise the existence of the variable is tested only ten times</li>
+        </ul>  
+    
+    <h3>Example of a low-level protocol</h3>
+     With the configuration by default of this element (i.e., local mode, low-level protocol and advanced options checked), put the following code in an evolution page of your simulation.        
+    <br> 
+    <pre>
+     t=t+0.1;
+     matlab.setValue("tt",t);
+     matlab.eval("yy=sin(2*pi*0.5*tt)");
+     y=matlab.getDouble("y");
+     System.out.println("y="+y+" at t="+t);
+    </pre>
+    Create the variables <b>t</b> and <b>y</b> in the Variables section of your simulation, and execute the simulation. In the console of EJS a message is shown.         
+
+    <h3>Example of a high-level protocol</h3>
+    Use the previous example, but now modifying the Table of Linked Variables of the model element. In the table put two rows wih the variables <b>tt</b> and <b>t</b>, and <b>yy</b> and <b>y</b> as Matlab and EJS variables respectively.
+        Modify the previous code of the evolution page by the following:
+    <br>                 
+    <pre>
+     t=t+0.1;
+     matlab.step(1);
+     System.out.println("y="+y+" at t="+t);
+    </pre>
+    Create an initialization page with the following code:
+    <br> 
+    <pre>
+    matlab.setCommand("yy=sin(2*pi*0.5*tt)");
+    </pre>
+    Similar as previous example, the console shows the same message when the simulation is run.        
+  </body>
+</html>
