@@ -2,7 +2,7 @@
 Connect Easy Java Simulations with Matlab.
 
 ## Introduction
-Sofwarelinks is a set of libraries that add interoperation capabilities to Easy Java Simulations. The aim is to have a platform/software-independent API to control remote simulations or real systems to develop remote/virtual labs.
+Sofwarelinks is a set of libraries that add Easy Java Simulations interoperability with external engineering software. The aim is to have a platform/software-independent API to control remote simulations or real systems to develop remote/virtual labs.
 
 The interoperability API provides several primitive methods which are commonly needed to communicate with remote labs:
 - connect(): Creates a new connection.
