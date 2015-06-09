@@ -8,7 +8,7 @@ The interoperability API provides several primitive methods which are commonly n
 - connect(): Creates a new connection.
 - disconnect(): Terminates an existent connection.
 - eval(command): Evaluates a Matlab code.
-- set(variable, value): Set/define the value of a Matalb variable into the Matlab workspace.
+- set(variable, value): Set/define the value of a Matlab variable into the Matlab workspace.
 - get(variable): Get the value of a variable from the Matlab workspace.
 
 The ejs-matlabconnector is composed of the following elements:
@@ -18,7 +18,7 @@ The ejs-matlabconnector is composed of the following elements:
   - matlabcontrol (https://code.google.com/p/matlabcontrol/): is a Java API that allows for calling MATLAB from Java: spawn Matlab sessions, evaluate code and read/write variables to the workspace, etc.
 
 ## Installation
-To install the EJS MatlabConnector Element, copy the folder 'bin/softwarelinks/' to '$EJS/bin/extensions/model_elements'. It will be automatically load the next time EJS is opened.
+To install the EJS MatlabConnector Element, copy the folder 'bin/softwarelinks/' to '$EJS/bin/extensions/model_elements'. It will be automatically loaded by EJS.
 
 The RPC Matlab Server is contained in a runnable jar file 'bin/RpcMatlabServer.jar', so you only have to copy to your local drive and run it. By default, the server listen to the port 2055.
 
