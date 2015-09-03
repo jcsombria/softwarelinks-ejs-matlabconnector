@@ -1,0 +1,7 @@
+/RpcMatlabServer/.project
+/RpcMatlabServer/.classpath
+/RpcMatlabServer/.settings/
+/RpcMatlabServer/bin/
+/RpcMatlabServer/lib/
+/RpcMatlabServer/build/
+*.jardesc
