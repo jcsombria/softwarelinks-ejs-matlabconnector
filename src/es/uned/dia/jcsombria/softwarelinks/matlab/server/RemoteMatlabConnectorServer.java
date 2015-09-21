@@ -1,6 +1,6 @@
 package es.uned.dia.jcsombria.softwarelinks.matlab.server;
 
-import es.uned.dia.jcsombria.softwarelinks.matlab.MatlabConnector;
+import es.uned.dia.jcsombria.softwarelinks.matlab.client.MatlabConnector;
 import es.uned.dia.jcsombria.softwarelinks.rpc.JsonRpcServer;
 import es.uned.dia.jcsombria.softwarelinks.rpc.param.RpcParam;
 import es.uned.dia.jcsombria.softwarelinks.rpc.param.RpcParamFactory;

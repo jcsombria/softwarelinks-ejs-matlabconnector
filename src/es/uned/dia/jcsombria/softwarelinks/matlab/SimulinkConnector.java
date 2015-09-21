@@ -22,6 +22,8 @@ package es.uned.dia.jcsombria.softwarelinks.matlab;
 import java.io.File;
 import java.io.IOException;
 
+import es.uned.dia.jcsombria.softwarelinks.matlab.client.MatlabConnector;
+
 public class SimulinkConnector extends MatlabConnector {
 
 	public static final String EJS_PREFIX = "Ejs_";

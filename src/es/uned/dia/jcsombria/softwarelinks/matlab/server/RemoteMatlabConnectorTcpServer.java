@@ -79,7 +79,7 @@ class Handler extends Thread {
 				Thread.sleep(10);
 				String request = in.readLine();
 				if(request != null) {
-					System.out.println(request);
+//					System.out.println(request);
 					String response = rmcs.parse(request);
 					out.println(response);
 				}
