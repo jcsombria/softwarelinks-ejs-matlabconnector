@@ -243,6 +243,8 @@ public class SimulinkConnector extends MatlabConnector implements RemoteControlP
 			waitForPauseSimulink(10);
 			startRequired = false;
 		}
+		String updateCommand = CommandBuilder.set_param(model, "SimulationCommand", "update");
+		eval(updateCommand);
 		String continueCommand = CommandBuilder.set_param(model, "SimulationCommand", "continue");
 		eval(continueCommand);
 		eval("EjsSimulationStatus='unknown';"); 
@@ -270,6 +272,8 @@ public class SimulinkConnector extends MatlabConnector implements RemoteControlP
 			startRequired = false;
 		}
 		for (int i=0, times=(int)dt; i<times; i++) {
+			String updateCommand = CommandBuilder.set_param(model, "SimulationCommand", "update");
+			eval(updateCommand);
 			String continueCommand = CommandBuilder.set_param(model, "SimulationCommand", "continue");
 			eval(continueCommand);
 			eval("EjsSimulationStatus='unknown';"); 
