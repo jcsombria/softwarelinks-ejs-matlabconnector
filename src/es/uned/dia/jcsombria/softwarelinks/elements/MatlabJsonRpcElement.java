@@ -33,6 +33,7 @@ import javax.swing.AbstractAction;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -85,6 +86,7 @@ public class MatlabJsonRpcElement extends AbstractModelElement {
 	private JTable linksTable;
 	private JPopupMenu popupMenuCon;
 	private ModelEditor editor;
+	private JComboBox transport = new JComboBox(new String[]{"tcp", "http"});
 
 	/**
 	 * Class Constructor
@@ -131,24 +133,37 @@ public class MatlabJsonRpcElement extends AbstractModelElement {
 	 * Returns the initialization code
 	 */
 	public String getInitializationCode(String _name) {
+		String init = getInstanceCode(_name);
+		String getVariables = getCodeForGetVariables();
+		String step = getCodeForStep();
+		String setVariables = getCodeForSetVariables();
+		String code = init;
+		return code;
+	}
+
+	private String getInstanceCode(String name) {
 		String server = serverText.getText().trim();
 		String port = portText.getText().trim();
 		if (server.length()<=0) { server = "localhost";	}
-		if (port.length()<=0) { port = "2055"; }	
-		String url = "tcp://"+server+":"+port;
-		
-		String code = "try {" +
-			"	es.uned.dia.jcsombria.softwarelinks.transport.Transport transport = new es.uned.dia.jcsombria.softwarelinks.transport.TcpTransport(\"" + url + "\");" +
-			"	" + _name + " = new " + getConstructorName() + "(transport);" +
-			"} catch (Exception e) {" +
-			"	e.printStackTrace();" +
-			"}";
-
-		String getVariables = getCodeForGetVariables();
-//		String step = getCodeForStep();
-//		String setVariables = getCodeForSetVariables();
-		
-		return code;
+		if (port.length()<=0) { port = "2055"; }
+		String protocol = transport.getSelectedItem().toString();
+		String transportClass = "";
+		switch(protocol) {
+		default:
+			protocol = "tcp";
+		case "tcp":
+			transportClass = "TcpTransport";
+			break;
+		case "http":
+			transportClass = "HttpTransport";
+			break;
+		}
+		String prefix = "es.uned.dia.jcsombria.softwarelinks.transport.";
+		String url = protocol + "://" + server + ":" + port;
+		return "try {" +
+			prefix + "Transport transport = new "+ prefix + transportClass + "(\"" + url + "\");" +
+			name + " = new " + getConstructorName() + "(transport);" +
+		"} catch (Exception e) { e.printStackTrace(); }";		
 	}
   
 	private String getCodeForGetVariables() {
@@ -172,6 +187,14 @@ public class MatlabJsonRpcElement extends AbstractModelElement {
 		return matlab != "" && matlab != null && ejs != "" && ejs != null;
 	}
 	
+	private String getCodeForStep() {
+		return "";
+	}
+		
+	private String getCodeForSetVariables() {
+		return "";
+	}
+
 	/**
 	 * Return a string to show next to the instance name 
 	 */
@@ -287,7 +310,7 @@ public class MatlabJsonRpcElement extends AbstractModelElement {
 		sl_topPanel.putConstraint(SpringLayout.NORTH, serverLabel, 7, SpringLayout.NORTH, topPanel);
 		sl_topPanel.putConstraint(SpringLayout.WEST, serverLabel, 5, SpringLayout.WEST, topPanel);
 		topPanel.add(serverLabel);
-		
+
 		JLabel portLabel = new JLabel("Port:");
 		sl_topPanel.putConstraint(SpringLayout.NORTH, portLabel, 0, SpringLayout.NORTH, serverLabel);
 		sl_topPanel.putConstraint(SpringLayout.WEST, portLabel, 10, SpringLayout.EAST, serverText);
@@ -303,6 +326,16 @@ public class MatlabJsonRpcElement extends AbstractModelElement {
 		sl_topPanel.putConstraint(SpringLayout.EAST, portText, -6, SpringLayout.EAST, topPanel);
 		topPanel.add(portText);
 		portText.setColumns(10);
+
+		JLabel transportLabel = new JLabel("Transport:");
+		sl_topPanel.putConstraint(SpringLayout.NORTH, transportLabel, 15, SpringLayout.SOUTH, serverLabel);
+		sl_topPanel.putConstraint(SpringLayout.WEST, transportLabel, 0, SpringLayout.WEST, serverLabel);	
+		topPanel.add(transportLabel);
+
+		sl_topPanel.putConstraint(SpringLayout.VERTICAL_CENTER, transport, 0, SpringLayout.VERTICAL_CENTER, transportLabel);
+		sl_topPanel.putConstraint(SpringLayout.WEST, transport, 5, SpringLayout.WEST, serverText);	
+		topPanel.add(transport);
+		
 		return topPanel;
 	}
 

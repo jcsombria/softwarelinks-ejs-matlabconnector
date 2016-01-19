@@ -2,7 +2,7 @@ package es.uned.dia.jcsombria.softwarelinks.matlab.client;
 
 import java.net.MalformedURLException;
 
-import es.uned.dia.jcsombria.softwarelinks.matlab.RemoteControlProtocolL1;
+import es.uned.dia.jcsombria.softwarelinks.matlab.common.RemoteControlProtocolL1;
 import es.uned.dia.jcsombria.softwarelinks.rpc.JsonRpcClient;
 import es.uned.dia.jcsombria.softwarelinks.rpc.param.RpcParam;
 import es.uned.dia.jcsombria.softwarelinks.rpc.param.RpcParamFactory;
@@ -27,7 +27,7 @@ public class RemoteMatlabConnectorClient extends JsonRpcClient implements Remote
 
 	@Override
 	public boolean connect() {
-		RpcParam[] response = (RpcParam[])execute("connect", null);
+		RpcParam<?>[] response = (RpcParam[])invoke("connect", null);
 		RpcParam<Boolean> result = (RpcParam<Boolean>)response[0];
 		boolean isConnected = result.get().booleanValue();
 		return isConnected;
@@ -35,41 +35,56 @@ public class RemoteMatlabConnectorClient extends JsonRpcClient implements Remote
 
 	@Override
 	public boolean disconnect() {
-		Object[] response = (Object[])execute("disconnect", null);
+		Object[] response = (Object[])invoke("disconnect", null);
 		RpcParam<Boolean> result = (RpcParam<Boolean>)response[0];
 		boolean isConnected = result.get().booleanValue();
 		return isConnected;
 	}
 
 	@Override
-	public Object get(String name) {
-		RpcParam[] args = new RpcParam[] {
+	public Object[] get(String[] name) {
+		RpcParam<?>[] args = new RpcParam[] {
 			RpcParamFactory.create("name", name)
 		};
-		RpcParam[] result = (RpcParam[])execute("get", args);
+		RpcParam<?> result = ((RpcParam[])invoke("get", args))[0];
+		RpcParam<?>[] resultArray = (RpcParam[])result.get();
+		int size = resultArray.length;
+		Object[] toReturn = new Object[size];
+		for(int i=0; i<size; i++) {
+			toReturn[i] = resultArray[i].get();
+		}
+		return toReturn;
+	}
+
+	@Override
+	public Object get(String name) {
+		RpcParam<?>[] args = new RpcParam[] {
+			RpcParamFactory.create("name", name)
+		};
+		RpcParam<?>[] result = (RpcParam[])invoke("get", args);
 		return result[0].get();
 	}
 	
 	@Override
-	public void set(String name, Object value) {
-		set(RpcParamFactory.create("name", name), RpcParamFactory.create("value", value));
+	public void set(String[] name, Object[] value) {
+		RpcParam<?>[] args = new RpcParam[] {
+			RpcParamFactory.create("name", name),
+			RpcParamFactory.create("value", value),
+		};
+		notify("set", args);
 	}
 
-	private void set(RpcParam<String> name, RpcParam value) {
-		RpcParam[] args = new RpcParam[] {
-			RpcParamFactory.create("name", name.get()),
-			value
-		};
-		execute("set", args);
+	@Override
+	public void set(String name, Object value) {
+		set(new String[]{name}, new Object[]{value});	
 	}
 
 	@Override
 	public boolean eval(String command) {
-		RpcParam[] args = new RpcParam[] {
+		RpcParam<?>[] args = new RpcParam[] {
 			RpcParamFactory.create("command", command)
 		};
-		RpcParam[] result = (RpcParam[])execute("eval", args);
-		/// TODO: convertir correctamente la respuesta
+		notify("eval", args);
 		return true;
 	}
 
@@ -92,6 +107,7 @@ public class RemoteMatlabConnectorClient extends JsonRpcClient implements Remote
 	}
 
 	public String getString(String name) {
+		Object a = get(name);
 		return (String)get(name);
 	}
 
@@ -102,6 +118,5 @@ public class RemoteMatlabConnectorClient extends JsonRpcClient implements Remote
 			values[i] = result[i].doubleValue();
 		}
 		return values;
-	}
-	
+	}	
 }

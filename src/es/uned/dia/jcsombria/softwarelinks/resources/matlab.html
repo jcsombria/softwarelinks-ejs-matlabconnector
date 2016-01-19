@@ -1,70 +1,63 @@
 <html>
   <head>
-  <title>Labview model element</title>
+  <title>RIP-Matlab model element</title>
       <link rel="stylesheet" type="text/css" href="style.css"></link>
   </head>
   <body">
     <h2>
-      <img src="./Labview.png"> Ejs-Labview model element 
+      <img src="./matlabicon.png"> RIP-Matlab model element 
     </h2>
     <p>
-      A Labview model element encapsulates the connection, via JIL server, with LabVIEW software to control the execution of a VI.
+      A RIP-Matlab model element provides an implementation of the Remote Interoperability Protocol (RIP) and encapsulates the connection with Matlab software to control the execution of a VI.
     </p>
 
     <h3>Usage</h3>
       <p>
-      To add a LabVIEW model element to your model, drag the icon element to the list of your model elements and
+      To add an RIP-Matlab model element to your model, drag the icon element to the list of your model elements and
       set the name of the variable for referring to the element.
-      The connection can be configured in the preferences window, the
-      address of the server, the port to establish the connection and the path to the LabVIEW VI.
-      
-      The links between the EJS variables and the controls/indicators of LabVIEW also can be done
-      in this window.
+      The connection can be configured in the preferences window: the
+      address of the server, the port to establish the connection and, optionally, the variables that should be automatically synchronized
+      between EJS and MATLAB.
       </p>
     <p>
 
-	The main methods of the LabVIEW class are: 
+  The RIP protocol provides an API to communicate with the server. The methods are categorized by functionality:
+	Connection control:
 	<ul>
-		<li> <i>connect()</i> Creates a new connection with JIL Server.</li>
-		<li> <i>openVI()</i> Opens the VI specified in <i>path</i>.</li> 	
-		<li> <i>runVI(boolean wait)</i> Runs the opened VI. </li> 	
-		<li> <i>step()</i> Sends the new values of the controls and get the values of the indicators.</li>
-		<li> <i>stopVI()</i> Stops the running VI.</li> 	
-		<li> <i>closeVI()</i> Closes the VI.</li> 	
-		<li> <i>disconnect()</i> Disconnects from JIL Server.</li>
+		<li> <i>connect()</i> Creates a new connection with MATLAB.</li>
+    <li> <i>disconnect()</i> Disconnects from MATLAB Server.</li>
+  </ul>
+  Data transmission:
+  <ul>
+		<li> <i>get(String[] variables)</i> Get the value of variables from the server.</li> 	
+		<li> <i>set(String[] variables, Object values[])</i> Set the value of variables in the server.</li> 	
 	</ul>
-	    
-    A call to the method <i>setValues()</i>
+  Command execution:
+  <ul>
+    <li> <i>eval(String command)</i> Evaluates a MATLAB command.</li>  
+  </ul>
 
-    A call to the element method <i>Boolean isConnected()</i> returns <i>true</i> if the connection with
-    JIL is opened and correctly working, and <i>false</i> otherwise. 
-    
-    A call to the element method <i>Boolean isRunning()</i> returns <i>true</i> if the LabVIEW VI 
-    is running and <i>false</i> if it is stopped.
-     
+  Calling get() and set() method without arguments synchronizes only the variables defined in the element configuration dialog.
+
     </p>
     <h3>Example of use</h3>
     <p>    
-    	The following code is usually included into an initialization page, and it must be executed to set up the connection (we use labview as instance name of the element)
+    	The following code is usually included into an initialization page, and it must be executed to set up the connection (we use <i>matlab</i> as instance name of the element)
     </p>
     <pre>
-labview.connect();
-labview.openVI();
-labview.runVI(false);
+matlab.connect();
     </pre>    
     <p>
     The following code is usually included into an evolution page, to exchange data periodically with the server.
     </p>
     <pre>
-labview.step();
-    </pre>   
+matlab.step();
+    </pre>
     <p>   	
     The following code must be executed to finalize the execution properly.
     </p>
     <pre>
-labview.stopVI();
-labview.closeVI();
-labview.disconnect();
+matlab.disconnect();
     </pre>
   </body>
 </html>

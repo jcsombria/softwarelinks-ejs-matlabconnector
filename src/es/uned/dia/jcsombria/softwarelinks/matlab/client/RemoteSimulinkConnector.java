@@ -1,11 +1,27 @@
+/**
+ * SimulinkConnector
+ * author: Jesús Chacón <jcsombria@gmail.com>
+ *
+ * Copyright (C) 2014 Jesús Chacón
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package es.uned.dia.jcsombria.softwarelinks.matlab.client;
 
-import java.io.File;
-import java.io.IOException;
-
-import es.uned.dia.jcsombria.softwarelinks.matlab.CommandBuilder;
-import es.uned.dia.jcsombria.softwarelinks.matlab.Context;
-import es.uned.dia.jcsombria.softwarelinks.matlab.RemoteControlProtocolL1;
+import es.uned.dia.jcsombria.softwarelinks.matlab.common.CommandBuilder;
+import es.uned.dia.jcsombria.softwarelinks.matlab.common.Context;
+import es.uned.dia.jcsombria.softwarelinks.matlab.common.RemoteControlProtocolL1;
 
 public class RemoteSimulinkConnector implements RemoteControlProtocolL1 {
 
@@ -204,7 +220,29 @@ public class RemoteSimulinkConnector implements RemoteControlProtocolL1 {
 	 * Advance the Simulink model exactly one step.
 	 */
 	public void step() {
-		step(1);
+		if (model == null) {
+			return;
+		}
+		if(context != null) {
+			context.setValues();
+		}
+		if (startRequired) {
+			String startCommand = CommandBuilder.set_param(model, "SimulationCommand", "start");			
+			eval(startCommand);
+			waitForPauseSimulink(10);
+			startRequired = false;
+		}
+		String continueCommand = CommandBuilder.set_param(model, "SimulationCommand", "continue");
+		eval(continueCommand);
+		eval("EjsSimulationStatus='unknown';"); 
+		if (waitForEverFlag){
+			waitForPauseSimulink();
+		} else {
+			waitForPauseSimulink(10);
+		}
+		if(context != null) {
+			context.getValues();
+		}
 	}
 
 	/**
@@ -274,6 +312,16 @@ public class RemoteSimulinkConnector implements RemoteControlProtocolL1 {
 
 	@Override
 	public Object get(String name) {
+		return matlab.get(name);
+	}
+
+	@Override
+	public void set(String[] name, Object[] value) {
+		matlab.set(name, value);
+	}
+
+	@Override
+	public Object[] get(String[] name) {
 		return matlab.get(name);
 	}
 }

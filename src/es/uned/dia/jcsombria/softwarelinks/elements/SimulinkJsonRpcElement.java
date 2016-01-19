@@ -24,8 +24,6 @@ import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.IOException;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Vector;
 
@@ -33,9 +31,9 @@ import javax.swing.AbstractAction;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
@@ -48,9 +46,6 @@ import javax.swing.border.TitledBorder;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 
 import org.colos.ejs.model_elements.AbstractModelElement;
 import org.colos.ejs.model_elements.ModelElementSearch;
@@ -58,45 +53,52 @@ import org.colos.ejs.model_elements.ModelElementsCollection;
 import org.colos.ejs.osejs.edition.ModelEditor;
 import org.opensourcephysics.display.OSPRuntime;
 import org.opensourcephysics.tools.ResourceLoader;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
+
+import es.uned.dia.jcsombria.softwarelinks.utils.ConfigurationModel;
+import es.uned.dia.jcsombria.softwarelinks.utils.SimulinkCodeBuilder;
 
 public class SimulinkJsonRpcElement extends AbstractModelElement { 
+	private static final String LOCAL_OR_REMOTE_LABEL = "Local or Remote:";
+	private static final String GENERIC_NAME = "Simulink";
+	private static final String VARIABLES_LABEL = "Matlab and EJS variables";
+	private static final String TRANSPORT_LABEL = "Transport:";
+	private static final String PORT_LABEL = "Port:";
+	private static final String SERVER_ADDRESS_LABEL = "Server address:";
+	private static final String RPC_SIMULINK_CONFIGURATION = "Connection";
 	//private ModelElementsCollection elementsCollection; // A provider of services for edition under EJS
 	private static final long serialVersionUID = 1L;
-	static ImageIcon ELEMENT_ICON = ResourceLoader.getIcon("es/uned/dia/jcsombria/softwarelinks/resources/matlabicon.png"); // This icon is included in this jar
-	// XML Node labels for saving the state of the elements 
-	private static final String XML_NODE_LABEL_MATLAB = "rpcmatlab";
-	private static final String XML_NODE_LABEL_SERVER = "server";
-	private static final String XML_NODE_LABEL_PORT = "port";
-	private static final String XML_NODE_LABEL_PATH = "path";
-	private static final String XML_NODE_LABEL_LINKS = "links";
-	private static final String XML_NODE_LABEL_ROW = "row";
-	private static final String XML_NODE_LABEL_LABVIEW = "matlab";
-	private static final String XML_NODE_LABEL_MODEL = "model";
-	private static final String XML_NODE_LABEL_CODE = "code";  
+	static ImageIcon ELEMENT_ICON = ResourceLoader.getIcon("es/uned/dia/jcsombria/softwarelinks/resources/simulink.png"); // This icon is included in this jar
 	// GUI elements
-	private DefaultTableModel linksTableModel;
+	LinksTableModel linksTableModel;
 	private JTextField serverText = new JTextField("localhost", 20);
 	private JTextField portText = new JTextField("2055", 6);
 	private JTable linksTable;
 	private JPopupMenu popupMenuCon;
 	private ModelEditor editor;
+	private JComboBox<String> transport = new JComboBox<>(new String[]{"tcp", "http"});
+	private JComboBox<String> localOrRemote = new JComboBox<>(new String[]{"local", "remote"});
 
+	ConfigurationModel configuration = new ConfigurationModel();
+	
+	class LinksTableModel extends DefaultTableModel {
+		public final String[] COLUMNS = {"Matlab", "EJS", "get", "set"};
+
+    	public void setDataVector(Object[][] dataVector) {
+    		setDataVector(dataVector, COLUMNS);
+    	}
+	
+	    public Class<?> getColumnClass(int c) {
+	    	return getValueAt(0, c).getClass();
+	    }
+	}
+	
 	/**
 	 * Class Constructor
 	 */
 	public SimulinkJsonRpcElement() {
-		linksTableModel = new DefaultTableModel();
-		Vector<String> controlsColumns = new Vector<String>();
-		controlsColumns.add("Matlab");
-		controlsColumns.add("EJS");
-		Vector<Vector<String>> controlsVector = new Vector<Vector<String>>();
-		linksTableModel.setDataVector(controlsVector, controlsColumns);
-		linksTableModel.addRow(new String[]{"", ""});
+		linksTableModel = new LinksTableModel();
+		Object[][] data = {{"", "", new Boolean(false), new Boolean(true)}};
+		linksTableModel.setDataVector(data);
 	}
 	 
 	/**
@@ -117,61 +119,26 @@ public class SimulinkJsonRpcElement extends AbstractModelElement {
 	 * Returns the generic name of the element
 	 */
 	public String getGenericName() {
-		return "SimulinkJsonRpc";
+		return GENERIC_NAME;
 	}
   
 	/**
 	 * Returns the name of the constructor
 	 */
 	public String getConstructorName() {
-		return "es.uned.dia.jcsombria.softwarelinks.matlab.client.RemoteSimulinkConnector";
+		return "es.uned.dia.jcsombria.softwarelinks.matlab.client.RemoteSimulinkConnectorV2";
 	}
-  
+
 	/** 
 	 * Returns the initialization code
 	 */
 	public String getInitializationCode(String _name) {
-		String server = serverText.getText().trim();
-		String port = portText.getText().trim();
-		if (server.length()<=0) { server = "localhost";	}
-		if (port.length()<=0) { port = "2055"; }	
-		String url = "tcp://"+server+":"+port;
-		String code = "try {" +
-			"	es.uned.dia.jcsombria.softwarelinks.transport.Transport transport = new es.uned.dia.jcsombria.softwarelinks.transport.TcpTransport(\"" + url + "\");" +
-			"	es.uned.dia.jcsombria.softwarelinks.matlab.client.RemoteMatlabConnectorClient matlab = new es.uned.dia.jcsombria.softwarelinks.matlab.client.RemoteMatlabConnectorClient(transport);" +
-			"	" + _name + " = new " + getConstructorName() + "(matlab);" +
-			"} catch (Exception e) {" +
-			"	e.printStackTrace();" +
-			"}";
-
-		String getVariables = getCodeForGetVariables();
-//		String step = getCodeForStep();
-//		String setVariables = getCodeForSetVariables();
-		
-		return code;
-	}
-  
-	private String getCodeForGetVariables() {
-		final String function = "public void getValues() {\n %s \n}\n"; 
-		final String assignment = "%s = get(\"%s\");\n"; 
-		StringBuilder body = new StringBuilder();
-		Vector<Vector<String>> data = (Vector<Vector<String>>)linksTableModel.getDataVector();
-		for(Vector<String> row : data) {
-			String matlabVariable = row.get(0);
-			String ejsVariable = row.get(1);
-			if(isValidGet(matlabVariable, ejsVariable)) {
-				String code = String.format(assignment, ejsVariable, matlabVariable);
-				System.out.println(code);
-				body.append(code);
-			}
-		}
-		return String.format(function, body.toString());
+		SimulinkCodeBuilder builder = new SimulinkCodeBuilder();
+		builder.setName(_name);
+		builder.setModel(configuration);
+		return builder.getCode();
 	}
 
-	private boolean isValidGet(String matlab, String ejs) {
-		return matlab != "" && matlab != null && ejs != "" && ejs != null;
-	}
-	
 	/**
 	 * Return a string to show next to the instance name 
 	 */
@@ -180,80 +147,47 @@ public class SimulinkJsonRpcElement extends AbstractModelElement {
 		String port = portText.getText().trim();
 		if (server.length()<=0) server = "localhost"; 
 		if (port.length()<=0) port = "2055";
-		return "("+server + ":" + port+")";
+		return "("+configuration.getServer() + ":" + configuration.getPort()+")";
 	}
 
 	/** 
 	 * Write the state into an XML String  
 	 */
 	public String savetoXML() {
-		String result = "<" + XML_NODE_LABEL_MATLAB + ">" +
-						"<" + XML_NODE_LABEL_SERVER + ">" + serverText.getText() + "</" + XML_NODE_LABEL_SERVER + ">" +
-	    	   		  	"<" + XML_NODE_LABEL_PORT + ">" + portText.getText() + "</" + XML_NODE_LABEL_PORT + ">";
-		if(linksTableModel != null) {
-			result += "<" + XML_NODE_LABEL_LINKS + ">";
-			Iterable<Vector> links = (Iterable<Vector>)linksTableModel.getDataVector();
-			for(Vector v : links) {
-				result += "<" + XML_NODE_LABEL_ROW + ">" + 
-					      "<" + XML_NODE_LABEL_LABVIEW + ">" + v.elementAt(0) + "</" + XML_NODE_LABEL_LABVIEW + ">" +  
-					      "<" + XML_NODE_LABEL_MODEL + ">" + v.elementAt(1) + "</" + XML_NODE_LABEL_MODEL + ">" + 
-					      "</" + XML_NODE_LABEL_ROW + ">" + "\n";
-			}
-			result += "</" + XML_NODE_LABEL_LINKS + ">";
-		}
-		result += "</" + XML_NODE_LABEL_MATLAB + ">";
-	  
-		return result;
+		String mode = (String)localOrRemote.getSelectedItem();
+		String server = serverText.getText().trim();
+		String port = portText.getText().trim();
+		String protocol = transport.getSelectedItem().toString();
+		configuration.setMode(mode);
+		configuration.setServer(server, port, protocol);
+		configuration.setData(linksTableModel.getDataVector());
+		return configuration.dump();
 	}
 
 	/** 
 	 * Restore the states from an XML String
 	 */
-	public void readfromXML(String _inputXML) {
-		try {
-			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-			InputSource is = new InputSource(new StringReader(_inputXML));        
-			DocumentBuilder db = dbf.newDocumentBuilder();
-			Document doc = db.parse(is);
-			// Server configuration
-			this.serverText.setText(doc.getElementsByTagName(XML_NODE_LABEL_SERVER).item(0).getTextContent());
-			this.portText.setText(doc.getElementsByTagName(XML_NODE_LABEL_PORT).item(0).getTextContent());
-			// The links between labview variables and model variables 
-			Node links = doc.getElementsByTagName(XML_NODE_LABEL_LINKS).item(0);
-			if (links != null) {
-				NodeList linksList = links.getChildNodes();
-				int i = 0; 
-				Node node = linksList.item(i);
-				while(node != null) {				
-					if(node.getNodeName() == XML_NODE_LABEL_ROW) { 
-						Vector<String> row = new Vector<String>();
-						int j = 0; 									
-						Node node1 = node.getFirstChild(), node2 = node1.getNextSibling(), node3 = node2.getNextSibling();
-						// The node labels are *NOT* checked
-						row.add(node1.getTextContent());
-						row.add(node2.getTextContent());
-						linksTableModel.addRow(row);
-					}
-					node = linksList.item(++i);				
-				}
-			}
-		} catch (ParserConfigurationException | SAXException | IOException e) {
-			System.err.println("Error al restaurar el estado del elemento.");
-		}
+	public void readfromXML(String inputXML) {
+		configuration.restore(inputXML);
+		serverText.setText(configuration.getServer());
+		portText.setText(configuration.getPort());
+		transport.setSelectedItem(configuration.getProtocol());
+		localOrRemote.setSelectedItem(configuration.getMode());
+		linksTableModel.setDataVector(configuration.getData());
 	}
   
 	/**
 	 * Return the tooltip of the element
 	 */
 	public String getTooltip() {
-		return "encapsulates an object that connects EJS to Matlab";
+		return "Encapsulates an object that connects EJS to Simulink";
 	}
 
 	/**
 	 * Return the html help page
 	 */
 	protected String getHtmlPage() {
-		return "es/uned/dia/jcsombria/softwarelinks/resources/matlab.html";
+		return "es/uned/dia/jcsombria/softwarelinks/resources/simulink.html";
 	}
 
 	/**
@@ -262,7 +196,7 @@ public class SimulinkJsonRpcElement extends AbstractModelElement {
 	protected Component createEditor(String name, Component parentComponent, final ModelElementsCollection collection) {
 		editor = collection.getEJS().getModelEditor();
 		JPanel topPanel = createTopPanel();
-		JPanel variablesPanel = createVariablesPanel(); 
+		JPanel variablesPanel = createVariablesPanel();
     	JButton closeButton = createCloseButton();
     	JPanel mainPanel = new JPanel();
 		mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
@@ -271,45 +205,55 @@ public class SimulinkJsonRpcElement extends AbstractModelElement {
 		mainPanel.add(topPanel);
 		mainPanel.add(variablesPanel);
     	mainPanel.add(closeButton);
-    	
 		return mainPanel;
 	}
 
 	private JPanel createTopPanel() {
 		JPanel topPanel = new JPanel();
-		topPanel.setBorder(new TitledBorder(null, "RpcSimulink configuration", TitledBorder.LEADING, TitledBorder.TOP));
+		JLabel modeLabel = new JLabel(LOCAL_OR_REMOTE_LABEL);
+		JLabel serverLabel = new JLabel(SERVER_ADDRESS_LABEL);
+		JLabel portLabel = new JLabel(PORT_LABEL);
+		JLabel transportLabel = new JLabel(TRANSPORT_LABEL);
+		SpringLayout sl_topPanel = new SpringLayout();	
+		portText.setColumns(10);
+		serverText.setColumns(10);
+		topPanel.setBorder(new TitledBorder(null, RPC_SIMULINK_CONFIGURATION, TitledBorder.LEADING, TitledBorder.TOP));
 		topPanel.setMinimumSize(new Dimension(420, 120));
 		topPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 120));
 		topPanel.setPreferredSize(new Dimension(420, 120));
-		SpringLayout sl_topPanel = new SpringLayout();
-		topPanel.setLayout(sl_topPanel);
-		JLabel serverLabel = new JLabel("Server address:");
-		sl_topPanel.putConstraint(SpringLayout.NORTH, serverLabel, 7, SpringLayout.NORTH, topPanel);
-		sl_topPanel.putConstraint(SpringLayout.WEST, serverLabel, 5, SpringLayout.WEST, topPanel);
+		topPanel.add(modeLabel);
+		topPanel.add(localOrRemote);
 		topPanel.add(serverLabel);
-		
-		JLabel portLabel = new JLabel("Port:");
+		topPanel.add(portLabel);
+		topPanel.add(serverText);
+		topPanel.add(portText);
+		topPanel.add(transportLabel);
+		topPanel.add(transport);
+		topPanel.setLayout(sl_topPanel);
+		sl_topPanel.putConstraint(SpringLayout.NORTH, modeLabel, 7, SpringLayout.NORTH, topPanel);
+		sl_topPanel.putConstraint(SpringLayout.WEST, modeLabel, 5, SpringLayout.WEST, topPanel);
+		sl_topPanel.putConstraint(SpringLayout.VERTICAL_CENTER, localOrRemote, 0, SpringLayout.VERTICAL_CENTER, modeLabel);
+		sl_topPanel.putConstraint(SpringLayout.WEST, localOrRemote, 5, SpringLayout.EAST, modeLabel);
+		sl_topPanel.putConstraint(SpringLayout.NORTH, serverLabel, 7, SpringLayout.SOUTH, localOrRemote);
+		sl_topPanel.putConstraint(SpringLayout.WEST, serverLabel, 5, SpringLayout.WEST, topPanel);
 		sl_topPanel.putConstraint(SpringLayout.NORTH, portLabel, 0, SpringLayout.NORTH, serverLabel);
 		sl_topPanel.putConstraint(SpringLayout.WEST, portLabel, 10, SpringLayout.EAST, serverText);
-		topPanel.add(portLabel);
-
-		sl_topPanel.putConstraint(SpringLayout.NORTH, serverText, -2, SpringLayout.NORTH, serverLabel);
-		sl_topPanel.putConstraint(SpringLayout.WEST, serverText, 6, SpringLayout.EAST, serverLabel);
-		topPanel.add(serverText);
-		serverText.setColumns(10);
-
-		sl_topPanel.putConstraint(SpringLayout.NORTH, portText, -2, SpringLayout.NORTH, serverLabel);
+		sl_topPanel.putConstraint(SpringLayout.VERTICAL_CENTER, serverText, 0, SpringLayout.VERTICAL_CENTER, serverLabel);
+		sl_topPanel.putConstraint(SpringLayout.WEST, serverText, 0, SpringLayout.WEST, localOrRemote);
+		sl_topPanel.putConstraint(SpringLayout.VERTICAL_CENTER, portText, 0, SpringLayout.VERTICAL_CENTER, serverText);
 		sl_topPanel.putConstraint(SpringLayout.WEST, portText, 6, SpringLayout.EAST, portLabel);
 		sl_topPanel.putConstraint(SpringLayout.EAST, portText, -6, SpringLayout.EAST, topPanel);
-		topPanel.add(portText);
-		portText.setColumns(10);
+		sl_topPanel.putConstraint(SpringLayout.NORTH, transportLabel, 15, SpringLayout.SOUTH, serverLabel);
+		sl_topPanel.putConstraint(SpringLayout.WEST, transportLabel, 0, SpringLayout.WEST, serverLabel);
+		sl_topPanel.putConstraint(SpringLayout.VERTICAL_CENTER, transport, 0, SpringLayout.VERTICAL_CENTER, transportLabel);
+		sl_topPanel.putConstraint(SpringLayout.WEST, transport, 0, SpringLayout.WEST, serverText);
 		return topPanel;
 	}
 
 	private JPanel createVariablesPanel() {
 		JPanel variablesPanel = new JPanel();
 		variablesPanel.setLayout(new BoxLayout(variablesPanel, BoxLayout.X_AXIS));
-		variablesPanel.setBorder(new TitledBorder(null, "Matlab and EJS variables", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+		variablesPanel.setBorder(new TitledBorder(null, VARIABLES_LABEL, TitledBorder.LEADING, TitledBorder.TOP, null, null));
 		variablesPanel.setMinimumSize(new Dimension(420, 120));		
 		variablesPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
 		variablesPanel.setPreferredSize(new Dimension(420, 120));
@@ -325,7 +269,7 @@ public class SimulinkJsonRpcElement extends AbstractModelElement {
 		linksTable.getModel().addTableModelListener(new TableModelListener() {
 			public void tableChanged(TableModelEvent e) {
 				if (TableModelEvent.UPDATE == e.getType() && linksTable.getRowCount() == e.getLastRow()+1) {
-					String[] emptyRow = new String[]{"", ""};
+					Object[] emptyRow = new Object[]{"", "", new Boolean(false), new Boolean(false)};
 					linksTableModel.addRow(emptyRow);
 				}
 			}
@@ -341,8 +285,16 @@ public class SimulinkJsonRpcElement extends AbstractModelElement {
     			}
     		}
     	};
+    	AbstractAction deleteRow = new AbstractAction("Delete link"){
+    		private static final long serialVersionUID = 1L;
+    		public void actionPerformed(ActionEvent e) {
+       			int row = linksTable.getSelectedRow();
+   				linksTableModel.removeRow(row);
+    		}
+    	};
     	popupMenuCon = new JPopupMenu();
     	popupMenuCon.add(connectVariable);
+    	popupMenuCon.add(deleteRow);
     	linksTable.addMouseListener (new MouseAdapter() {    		
     		public void mousePressed (MouseEvent _evt) {
     			if (OSPRuntime.isPopupTrigger(_evt) && linksTable.isEnabled ()) {
@@ -381,5 +333,4 @@ public class SimulinkJsonRpcElement extends AbstractModelElement {
 		java.util.List<ModelElementSearch> list = new ArrayList<ModelElementSearch>();
 		return list;
 	}
-
 }
