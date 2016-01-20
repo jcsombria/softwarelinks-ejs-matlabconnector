@@ -1,5 +1,5 @@
 # softwarelinks-ejs-matlabconnector
-Connect Easy Java Simulations with Matlab.
+Connect Easy JAVA Simulations with Matlab.
 
 ## Introduction
 Sofwarelinks is a set of libraries that add Easy Java Simulations interoperability with external engineering software. The aim is to have a platform/software-independent API to control remote simulations or real systems to develop remote/virtual labs.
@@ -20,7 +20,14 @@ The ejs-matlabconnector is composed of the following elements:
 ## Installation
 To install the EJS MatlabConnector Element, copy the folder 'bin/softwarelinks/' to '$EJS/bin/extensions/model_elements'. It will be automatically loaded by EJS.
 
-The RPC Matlab Server is contained in a runnable jar file 'bin/RpcMatlabServer.jar', so you only have to copy to your local drive and run it. By default, the server listen to the port 2055.
+The RPC Matlab Server is contained in a runnable jar file 'bin/RpcMatlabServer/RpcMatlabServer.jar', so you only have to copy the folder to your local drive and run it with the following command:
+```
+java -jar RpcMatlabServer.jar
+```
+By default, the server accept http connections to the port 2055, but it can be configured to listen to another port or to accept tcp connections:
+```
+java -jar RpcMatlabserver.jar -t <http|tcp> -p <port>
+```
 
 ## EJS Example
 A basic example of use in EJS. A senoidal function `y(t)` is evaluated in Matlab, passing the time `t` as parameter, which is generated in EJS.
